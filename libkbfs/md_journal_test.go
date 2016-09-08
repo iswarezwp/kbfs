@@ -114,7 +114,7 @@ func checkBRMD(t *testing.T, uid keybase1.UID, verifyingKey VerifyingKey,
 	require.Equal(t, expectedPrevRoot, brmd.GetPrevRoot())
 	require.Equal(t, expectedMergeStatus, brmd.MergedStatus())
 	// MDv3 TODO: pass key bundles
-	err := brmd.IsValidAndSigned(codec, crypto, nil, nil)
+	err := brmd.IsValidAndSigned(codec, crypto, nil)
 	require.NoError(t, err)
 	err = brmd.IsLastModifiedBy(uid, verifyingKey)
 	require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestMDJournalBasic(t *testing.T) {
 	// Should start off as empty.
 
 	// MDv3 TODO: pass actual key bundles
-	head, err := j.getHead(uid, verifyingKey, nil, nil)
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ImmutableBareRootMetadata{}, head)
 	require.Equal(t, 0, getMDJournalLength(t, j))
@@ -166,7 +166,7 @@ func TestMDJournalBasic(t *testing.T) {
 	// Should now be non-empty.
 	// MDv3 TODO: pass actual key bundles
 	ibrmds, err := j.getRange(
-		uid, verifyingKey, nil, nil, 1, firstRevision+MetadataRevision(2*mdCount))
+		uid, verifyingKey, nil, 1, firstRevision+MetadataRevision(2*mdCount))
 	require.NoError(t, err)
 	require.Equal(t, mdCount, len(ibrmds))
 
@@ -174,7 +174,7 @@ func TestMDJournalBasic(t *testing.T) {
 		ibrmds, firstRevision, firstPrevRoot, Merged, NullBranchID)
 
 	// MDv3 TODO: pass actual key bundles
-	head, err = j.getHead(uid, verifyingKey, nil, nil)
+	head, err = j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ibrmds[len(ibrmds)-1], head)
 }
@@ -189,7 +189,8 @@ func TestMDJournalPutCase1Empty(t *testing.T) {
 	_, err := j.put(ctx, uid, verifyingKey, signer, ekg, bsplit, md)
 	require.NoError(t, err)
 
-	head, err := j.getHead(uid, verifyingKey)
+	// MDv3 TODO: pass key bundles
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, md.bareMd, head.BareRootMetadata)
 }
@@ -238,7 +239,7 @@ func TestMDJournalPutCase1ReplaceHead(t *testing.T) {
 	require.NoError(t, err)
 
 	// MDv3 TODO: pass actual key bundles
-	head, err := j.getHead(uid, verifyingKey, nil, nil)
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, md.Revision(), head.RevisionNumber())
 	require.Equal(t, md.DiskUsage(), head.DiskUsage())
@@ -318,7 +319,8 @@ func TestMDJournalPutCase3NonEmptyAppend(t *testing.T) {
 	err = j.convertToBranch(ctx, uid, verifyingKey, signer)
 	require.NoError(t, err)
 
-	head, err := j.getHead(uid, verifyingKey)
+	// MDv3 TODO: pass key bundles
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 
 	md2 := makeMDForTest(t, id, MetadataRevision(11), uid, head.mdID)
@@ -341,7 +343,8 @@ func TestMDJournalPutCase3NonEmptyReplace(t *testing.T) {
 	err = j.convertToBranch(ctx, uid, verifyingKey, signer)
 	require.NoError(t, err)
 
-	head, err := j.getHead(uid, verifyingKey)
+	// MDv3 TODO: pass key bundles
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 
 	md.SetUnmerged()
@@ -416,7 +419,7 @@ func TestMDJournalBranchConversion(t *testing.T) {
 
 	// MDv3 TODO: pass actual key bundles
 	ibrmds, err := j.getRange(
-		uid, verifyingKey, nil, nil, 1, firstRevision+MetadataRevision(2*mdCount))
+		uid, verifyingKey, nil, 1, firstRevision+MetadataRevision(2*mdCount))
 	require.NoError(t, err)
 	require.Equal(t, mdCount, len(ibrmds))
 
@@ -426,7 +429,7 @@ func TestMDJournalBranchConversion(t *testing.T) {
 	require.Equal(t, 10, getMDJournalLength(t, j))
 
 	// MDv3 TODO: pass actual key bundles
-	head, err := j.getHead(uid, verifyingKey, nil, nil)
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ibrmds[len(ibrmds)-1], head)
 }
@@ -468,7 +471,7 @@ func TestMDJournalBranchConversionAtomic(t *testing.T) {
 
 	// MDv3 TODO: pass actual key bundles
 	ibrmds, err := j.getRange(
-		uid, verifyingKey, nil, nil, 1, firstRevision+MetadataRevision(2*mdCount))
+		uid, verifyingKey, nil, 1, firstRevision+MetadataRevision(2*mdCount))
 	require.NoError(t, err)
 	require.Equal(t, mdCount, len(ibrmds))
 
@@ -478,7 +481,7 @@ func TestMDJournalBranchConversionAtomic(t *testing.T) {
 	require.Equal(t, 10, getMDJournalLength(t, j))
 
 	// MDv3 TODO: pass actual key bundles
-	head, err := j.getHead(uid, verifyingKey, nil, nil)
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ibrmds[len(ibrmds)-1], head)
 }
@@ -504,40 +507,40 @@ func TestMDJournalClear(t *testing.T) {
 
 	// Clearing the master branch shouldn't work.
 	// MDv3 TODO: pass actual key bundles
-	err = j.clear(ctx, uid, verifyingKey, NullBranchID, nil, nil)
+	err = j.clear(ctx, uid, verifyingKey, NullBranchID, nil)
 	require.Error(t, err)
 
 	// Clearing a different branch ID should do nothing.
 	// MDv3 TODO: pass actual key bundles
-	err = j.clear(ctx, uid, verifyingKey, FakeBranchID(1), nil, nil)
+	err = j.clear(ctx, uid, verifyingKey, FakeBranchID(1), nil)
 	require.NoError(t, err)
 	require.Equal(t, bid, j.branchID)
 
 	// MDv3 TODO: pass actual key bundles
-	head, err := j.getHead(uid, verifyingKey, nil, nil)
+	head, err := j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.NotEqual(t, ImmutableBareRootMetadata{}, head)
 
 	// Clearing the correct branch ID should clear the entire
 	// journal, and reset the branch ID.
 	// MDv3 TODO: pass actual key bundles
-	err = j.clear(ctx, uid, verifyingKey, bid, nil, nil)
+	err = j.clear(ctx, uid, verifyingKey, bid, nil)
 	require.NoError(t, err)
 	require.Equal(t, NullBranchID, j.branchID)
 
 	// MDv3 TODO: pass actual key bundles
-	head, err = j.getHead(uid, verifyingKey, nil, nil)
+	head, err = j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ImmutableBareRootMetadata{}, head)
 
 	// Clearing twice should do nothing.
 	// MDv3 TODO: pass actual key bundles
-	err = j.clear(ctx, uid, verifyingKey, bid, nil, nil)
+	err = j.clear(ctx, uid, verifyingKey, bid, nil)
 	require.NoError(t, err)
 	require.Equal(t, NullBranchID, j.branchID)
 
 	// MDv3 TODO: pass actual key bundles
-	head, err = j.getHead(uid, verifyingKey, nil, nil)
+	head, err = j.getHead(uid, verifyingKey, nil)
 	require.NoError(t, err)
 	require.Equal(t, ImmutableBareRootMetadata{}, head)
 }
@@ -563,7 +566,7 @@ func TestMDJournalRestart(t *testing.T) {
 
 	// MDv3 TODO: pass actual key bundles
 	ibrmds, err := j.getRange(
-		uid, verifyingKey, nil, nil, 1, firstRevision+MetadataRevision(2*mdCount))
+		uid, verifyingKey, nil, 1, firstRevision+MetadataRevision(2*mdCount))
 	require.NoError(t, err)
 	require.Equal(t, mdCount, len(ibrmds))
 
@@ -600,7 +603,7 @@ func TestMDJournalRestartAfterBranchConversion(t *testing.T) {
 
 	// MDv3 TODO: pass actual key bundles
 	ibrmds, err := j.getRange(
-		uid, verifyingKey, nil, nil, 1, firstRevision+MetadataRevision(2*mdCount))
+		uid, verifyingKey, nil, 1, firstRevision+MetadataRevision(2*mdCount))
 	require.NoError(t, err)
 	require.Equal(t, mdCount, len(ibrmds))
 
